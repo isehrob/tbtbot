@@ -3,6 +3,7 @@ import time
 import json
 
 from datetime import datetime
+import tornado
 
 from tornado import ioloop, gen, httpclient
 
@@ -43,8 +44,17 @@ def getUpdates(timeout):
         return False
 
     for update in updates:
+        # print(update)
+        text = update['message']['text']
+        command = text if text.startswith('/') else '/main'
+        request = tornado.httpclient.HTTPRequest(
+            url=('http://127.0.0.1:8787%s' % command),
+            allow_nonstandard_methods=True,
+            body=json.dumps(update)
+        )
+        response = yield client.fetch(request)
         yield client.fetch(API % 'sendMessage?chat_id=%s&text=%s'
-                     % (update['message']['from']['id'], "hello"))
+                     % (update['message']['from']['id'], response.body.decode()))
         time.sleep(1)
     lastOffset = updates[-1]['update_id'] + 1
     putLastOffset(updid, lastOffset)
@@ -55,7 +65,7 @@ def main():
     yield getMe()
     while True:
         yield getUpdates(5)
-        time.sleep(5)
+        time.sleep(1)
 
 
 if __name__ == "__main__":
