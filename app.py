@@ -72,9 +72,7 @@ def make_app():
 
 
 if __name__ == "__main__":
-    app = make_app()
-    # app.listen(8787, '0.0.0.0')
-    http_server = tornado.httpserver.HTTPServer(app, ssl_options={
+    http_server = tornado.httpserver.HTTPServer(make_app(), ssl_options={
         "certfile": env('CERTFILE'),
         "keyfile": env("KEYFILE")
     })
