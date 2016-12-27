@@ -7,11 +7,14 @@ import tornado
 
 from tornado import ioloop, gen, httpclient
 
+from envparse import env
 import bot_db
 
+# reading env
+env.read_envfile('.env')
 # our bot token
 # sehrob_bot
-BOT_TOKEN = "<BOT_TOKEN>"
+BOT_TOKEN = env('BOT_TOKEN')
 # use like this: API % method_name
 API = "https://api.telegram.org/bot%s/%s" % (BOT_TOKEN, "%s")
 
