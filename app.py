@@ -5,10 +5,15 @@ import tornado.ioloop
 import tornado.web
 import tornado.httpclient
 
+from envparse import env
+
+
+# reading env
+env.read_envfile('.env')
 
 # our bot token
 # sehrob_bot
-BOT_TOKEN = "<BOT_TOKEN>"
+BOT_TOKEN = '' # env('BOT_TOKEN')
 # use like this: API % method_name
 API = "https://api.telegram.org/bot%s/%s" % (BOT_TOKEN, "%s")
 
@@ -70,8 +75,8 @@ if __name__ == "__main__":
     app = make_app()
     # app.listen(8787, '0.0.0.0')
     http_server = tornado.httpserver.HTTPServer(app, ssl_options={
-        "certfile": "/home/s_ibrohimov/projects/tornado/ssl/tbotprkey.pem",
-        "keyfile": "/home/s_ibrohimov/projects/tornado/ssl/tbotprkey.key"
+        "certfile": env('CERTFILE'),
+        "keyfile": env("KEYFILE")
     })
     http_server.listen(8443, '0.0.0.0')
     tornado.ioloop.IOLoop.current().start()

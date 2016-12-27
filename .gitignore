@@ -5,4 +5,4 @@ ssl
 bot_db
 example.db
 cache.db
-
+.env
