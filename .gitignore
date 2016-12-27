@@ -1,4 +1,8 @@
 env
 __pycache__
 *.pyc
+ssl
+bot_db
+example.db
+cache.db
 
