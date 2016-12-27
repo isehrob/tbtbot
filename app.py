@@ -8,7 +8,7 @@ import tornado.httpclient
 
 # our bot token
 # sehrob_bot
-BOT_TOKEN = "224642244:AAHBHgcyUXyJyjYOaUbORf64k4kKAqcXv2U"
+BOT_TOKEN = "<BOT_TOKEN>"
 # use like this: API % method_name
 API = "https://api.telegram.org/bot%s/%s" % (BOT_TOKEN, "%s")
 
