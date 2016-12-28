@@ -3,10 +3,10 @@ from distutils.core import setup
 setup(
     name='tbtbot',
     version='0.1dev',
-    author='Sehrob Ibrohimov'
+    author='Sehrob Ibrohimov',
     packages=['tbtbot', 'tbtbot.test'],
     license='License.txt',
-    description='Telegram bot'
+    description='Telegram bot',
     long_description=open('README.md').read(),
     install_requires=[
         "envparse >= 0.2.0",
