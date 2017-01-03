@@ -4,6 +4,7 @@ import tornado.httpserver
 import tornado.ioloop
 import tornado.web
 import tornado.httpclient
+import tornado.gen
 
 from envparse import env
 
@@ -30,10 +31,26 @@ class TelegramRequestHandler(tornado.web.RequestHandler):
 
 
 class WebHookHandler(TelegramRequestHandler):
-    def post(self):
-        print(self.message)
-        self.write("kuku")
 
+    @tornado.gen.coroutine
+    def post(self):
+        if self.message:
+            text = self.message['message']['text']
+            command = text if text.startswith('/') else '/main'
+            print('yes message', command)
+            self.redirect(command)
+        else:
+            print('no message')
+            self.redirect("/main")
+        # request = tornado.httpclient.HTTPRequest(
+        #     url=('https://91.212.89.6:8443%s' % command),
+        #     allow_nonstandard_methods=True,
+        #     body=json.dumps(self.message)
+        # )
+        # response = yield client.fetch(request)
+        # yield client.fetch(API % 'sendMessage?chat_id=%s&text=%s'
+        #     % (self.message['message']['from']['id'], response.body.decode()))
+    
     def get(self):
         self.post()
 
@@ -45,7 +62,7 @@ class WebHookInfo(tornado.web.RequestHandler):
 class MainHandler(TelegramRequestHandler):
     def get(self):
         print('/main', self.message)
-        self.write("Hello world")
+        self.redirect("/name")
 
 
 class NameHandler(TelegramRequestHandler):
@@ -63,13 +80,25 @@ class QuestionHandler(TelegramRequestHandler):
 
 
 def make_app():
-    return tornado.web.Application([
+    app = tornado.web.Application([
         (r"/webhook", WebHookHandler),
         (r"/name", NameHandler),
         (r"/ask", QuestionHandler),
         (r"/.*", MainHandler),
     ])
 
+    #app.add_handlers(r"https://91.212.89.6",[
+     #   (r"/name", NameHandler),
+      #  (r"/ask", QuestionHandler),
+       # (r"/.*", MainHandler),
+    #])
+
+    return app
+
+
+def kuku():
+    with open('check.txt', 'a') as f:
+        f.write('working-ku\n')
 
 if __name__ == "__main__":
     http_server = tornado.httpserver.HTTPServer(make_app(), ssl_options={
@@ -77,4 +106,6 @@ if __name__ == "__main__":
         "keyfile": env("KEYFILE")
     })
     http_server.listen(env('SERVER_PORT'), env('SERVER_HOST'))
+    pcb = tornado.ioloop.PeriodicCallback(kuku, 2000)
+    pcb.start()
     tornado.ioloop.IOLoop.current().start()
