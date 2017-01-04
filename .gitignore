@@ -4,5 +4,7 @@ __pycache__
 ssl
 tbtbot/example.db
 .env
+.env2
 bin
 *.egg-info
+tbtbot/offset.txt
