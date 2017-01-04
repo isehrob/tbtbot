@@ -13,7 +13,7 @@ from envparse import env
 
 
 # reading env
-env.read_envfile('.env')
+env.read_envfile('.env2')
 
 # our bot token
 # sehrob_bot
@@ -22,35 +22,53 @@ BOT_TOKEN = env('BOT_TOKEN')
 API = "https://api.telegram.org/bot%s/%s" % (BOT_TOKEN, "%s")
 
 
-class _CustomRequestDispatcher(tornado.web._RequestDispatcher):
 
-    def finish(self):
-        # kind of a hack of tornado routing 
-        # here if we get some update through our
-        # webhook then we extract the command from
-        # the telegram update and reroute the request
-        if self.stream_request_body:
-            self.request.body.set_result(None)
-        else:
-            self.request.body = b''.join(self.chunks)
-            self.request._parse_body()
+def getMe():
+    # client = httpclient.HTTPClient()
+    client = tornado.httpclient.HTTPClient()
+    result = client.fetch(API % 'getMe')
+    print(result.body)
+    return
 
-        if self.request.path == '/webhook':
-            text = json.loads(
-                self.request.body.decode()
-            )['message']['text']
-            command = text if text.startswith('/') else '/main'
-            self.request.path = command
-            self._find_handler()
+def getLastOffset():
+    try:
+        with open('offset.txt', 'r') as f:
+            return int(f.readline())
+    except FileNotFoundError:
+        print('zero offset')
+        return 0
 
-        self.execute()
+def putLastOffset(updid):
+    with open('offset.txt', 'w') as f:
+        return f.write(str(updid))
 
 
-# implementing our above mentioned hack
-class CustomApplication(tornado.web.Application):
+def getUpdates(timeout):
+    # client = httpclient.HTTPClient()
+    client = tornado.httpclient.HTTPClient()
 
-    def start_request(self, server_conn, request_conn):
-        return _CustomRequestDispatcher(self, request_conn)
+    updid = getLastOffset()
+    result = client.fetch(API % 'getUpdates?timeout=%d&offset=%d'
+                          % (timeout, updid))
+    updates = json.loads(result.body.decode())['result']
+
+    if not len(updates):
+        return False
+    else:
+        lastOffset = updates[-1]['update_id'] + 1
+        putLastOffset(lastOffset)
+
+    for update in updates:
+        print(update)
+        text = update['message']['text']
+        command = text if text.startswith('/') else '/main'
+        request = tornado.httpclient.HTTPRequest(
+            url=('http://127.0.0.1:8787%s' % command),
+            allow_nonstandard_methods=True,
+            body=json.dumps(update)
+        )
+        response = client.fetch(request)
+    return True
 
 
 # Custom `RequestHandler` class which encapsulates the 
@@ -73,26 +91,25 @@ class TelegramRequestHandler(tornado.web.RequestHandler):
 
 
 class MainHandler(TelegramRequestHandler):
-    def post(self):
+    def get(self):
         self.message = "Hello!"
         self.send()
 
 
 class NameHandler(TelegramRequestHandler):
-    def post(self):
+    def get(self):
         self.message = "My name is this!"
         self.send()  
 
 
 class QuestionHandler(TelegramRequestHandler):
-    def post(self):
+    def get(self):
         self.message = "I don't know!"
         self.send()
 
 
 def make_app():
-    app = CustomApplication([
-        (r"/webhook", tornado.web.RequestHandler),
+    app = tornado.web.Application([
         (r"/name", NameHandler),
         (r"/ask", QuestionHandler),
         (r"/.*", MainHandler),
@@ -101,21 +118,16 @@ def make_app():
     return app
 
 
-# def kuku():
-#     # some kind of parallel task
-#     with open('check.txt', 'a') as f:
-#         f.write('working-ku\n')
+def updater():
+    # some kind of parallel task
+    getUpdates(10)
 
 
 if __name__ == "__main__":
 
-    # pcb = tornado.ioloop.PeriodicCallback(kuku, 2000)
-    # pcb.start()
+    pcb = tornado.ioloop.PeriodicCallback(updater, 3000)
+    pcb.start()
 
-    http_server = tornado.httpserver.HTTPServer(make_app(), ssl_options={
-        "certfile": env('CERTFILE'),
-        "keyfile": env("KEYFILE")
-    })
-    
+    http_server = tornado.httpserver.HTTPServer(make_app())
     http_server.listen(env('SERVER_PORT'), env('SERVER_HOST'))
     tornado.ioloop.IOLoop.current().start()
