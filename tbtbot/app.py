@@ -101,21 +101,13 @@ def make_app():
     return app
 
 
-# def kuku():
-#     # some kind of parallel task
-#     with open('check.txt', 'a') as f:
-#         f.write('working-ku\n')
-
 
 if __name__ == "__main__":
-
-    # pcb = tornado.ioloop.PeriodicCallback(kuku, 2000)
-    # pcb.start()
 
     http_server = tornado.httpserver.HTTPServer(make_app(), ssl_options={
         "certfile": env('CERTFILE'),
         "keyfile": env("KEYFILE")
     })
-    
+
     http_server.listen(env('SERVER_PORT'), env('SERVER_HOST'))
     tornado.ioloop.IOLoop.current().start()
