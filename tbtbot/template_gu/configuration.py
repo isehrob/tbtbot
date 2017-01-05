@@ -20,4 +20,4 @@ KEYFILE = env("KEYFILE")
 SERVER_PORT = env('SERVER_PORT')
 SERVER_HOST = env('SERVER_HOST')
 
-BOSSES = [139912293,]
+BOSSES = [env('BOSS', cast=int),]
