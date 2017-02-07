@@ -9,12 +9,13 @@ import tornado.httpclient
 # common functionality for telegram requests
 class RequestHandler(tornado.web.RequestHandler):
 
-    def initialize(self, api):
+    def initialize(self, api, db=None):
         self.message = None
         self.update = None
         self.chat_id = None
         self.client = tornado.httpclient.HTTPClient()
         self.api = api
+        self.db = db
 
         if self.request.body:
             self.update = json.loads(self.request.body.decode())
@@ -31,3 +32,9 @@ class RequestHandler(tornado.web.RequestHandler):
     def send_help(self):
         self.message = "What?"
         self.send()
+
+    def on_finish(self):
+        if self.db:
+            # TODO (sehrob): think of how to handle transaction errors
+            self.db.commit()
+            self.db.close()
