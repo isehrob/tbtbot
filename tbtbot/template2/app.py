@@ -13,7 +13,7 @@ import routes
 
 def make_app():
     app = tornado.web.Application(
-        routes.routes,
+        routes.get_routes(),
         debug=True,
         autoreload=True
     )

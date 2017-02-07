@@ -5,7 +5,8 @@ import handlers
 import configuration
 
 
-routes = [
-    (r"/", handlers.MainHandler, dict(api=configuration.API)),
-    (r"/.*", handlers.UnknownCommandHandler, dict(api=configuration.API))
-]
+def get_routes():
+	return [
+	    (r"/", handlers.MainHandler, dict(api=configuration.API), 'command description'),
+	    (r"/.*", handlers.UnknownCommandHandler, dict(api=configuration.API), 'command description')
+	]

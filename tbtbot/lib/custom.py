@@ -10,7 +10,7 @@ import tornado.httpclient
 
 # Custom `RequestHandler` class which encapsulates the 
 # common functionality for telegram requests
-class TelegramRequestHandler(tornado.web.RequestHandler):
+class RequestHandler(tornado.web.RequestHandler):
 
     def initialize(self, api):
         self.message = None
@@ -28,13 +28,13 @@ class TelegramRequestHandler(tornado.web.RequestHandler):
             % (self.chat_id, "typing"))
 
     def send(self):
-        self.client.fetch(self.api % 'sendMessage?chat_id=%s&text=%s'
-            % (self.chat_id, self.message))
+        self.client.fetch(self.api % 'sendMessage?chat_id=%s&text=%s&reply_markup=%s'
+            % (self.chat_id, self.message, json.dumps({'remove_keyboard': True})))
 
     def send_help(self):
-    	message = "What?"
-    	self.client.fetch(self.api % 'sendMessage?chat_id=%s&text=%s'
-            % (self.chat_id, message))
+        self.message = "What?"
+        self.send()
+    	
 
 
 class _CustomRequestDispatcher(tornado.web._RequestDispatcher):
@@ -62,7 +62,8 @@ class _CustomRequestDispatcher(tornado.web._RequestDispatcher):
 
 
 # implementing our above mentioned hack
-class CustomApplication(tornado.web.Application):
+class Application(tornado.web.Application):
 
 	def start_request(self, server_conn, request_conn):
+		print(dir(request_conn))
 		return _CustomRequestDispatcher(self, request_conn)

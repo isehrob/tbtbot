@@ -27,6 +27,10 @@ def get_parser():
 						type=str, nargs='?', const='')
 	pparser.add_argument('-cs', '--create_certificate', help='create self-signed certificate',
 						action="store_true")
+	pparser.add_argument('-lc', '--list_commands', help='List available bot commands',
+						action="store_true")
+	pparser.add_argument('-sdb', '--syncdb', help='Syncronizes database with models module',
+						action="store_true")
 	pparser.add_argument('-sw', '--set_webhook', help='set webhook to get updates', 
 						action="store_true")
 	pparser.add_argument('-gw', '--get_webhookInfo', help='gets webhookInfo', 
@@ -51,29 +55,18 @@ def set_webhook():
 		raise Exception(error_ms)
 	else:
 		print('setting webhook for', configuration.API)
-		# request = tornado.httpclient.HTTPRequest(
-		# 	url=(configuration.API % 'setWebhook'),
-		# 	headers={'Content-type': 'multipart/form-data'},
-		# 	method='POST',
-		# 	body='url=%s\ncertificate=@%s' % (
-		# 		configuration.WEBHOOK_URL, open(configuration.CERTFILE).read())
-		# )
-		files = {
-			'file': ('certificate', open(configuration.CERTFILE, 'rb'))
-		}
 
-		headers = {'Content-Type': 'multipart/form-data'}
+		files = {
+			'certificate': ('certificate', open(configuration.CERTFILE, 'rb')),
+		}
 
 		data = {
 			'url': configuration.WEBHOOK_URL,
-			# 'certificate': open(configuration.CERTFILE, 'rb').read()
 		}
 
 		url = configuration.API % 'setWebhook'
-		rp = requests.Request('POST', url, headers=headers, data=data, files=files)
-		# rp = tornado.httpclient.HTTPClient().fetch(request)
-		print('result', rp.files, rp.data)
-		# print('result of setWebhook: ', rp.text)
+		rp = requests.post(url, files=files, data=data)
+		print('result of setWebhook: ', rp.status_code, rp.text, rp.reason)
 	finally:
 		sys.path.pop(0)
 
@@ -137,6 +130,59 @@ def create_certificate(bot_name):
 		return cert_path
 	os.chdir(cwd)
 	return False
+
+
+def sync_db():
+	# deletes the webHook
+	import sys
+	sys.path.insert(0, os.getcwd())
+
+	try:
+		import configuration
+	except ImportError:
+		error_ms = '%s\n%s' % ('Couln\'t import configuration!',
+			'Please, go the directory where your bot code lives and then try')
+		raise Exception(error_ms)
+	else:
+		import importlib
+		try:
+			db = importlib.import_module(configuration.DB_MODULE)
+		except ImportError:
+			error_ms = '%s\n%s' % ('Couln\'t import db module!',
+			'Maybe you\'ve deleted db.py or moved to somewhere else?')
+			raise Exception(error_ms)
+		else:
+			db.create_all()
+	finally:
+		sys.path.pop(0)
+
+
+def get_command_list():
+	# todo: make more elegant
+	def remove_slash(cmd):
+		return cmd[1:]
+
+	import sys
+	sys.path.insert(0, os.getcwd())
+	try:
+		from routes import get_routes
+	except ImportError:
+		error_ms = '%s\n%s' % ('Couln\'t import routes!',
+			'Please, go the directory where your bot code lives and then try')
+		raise Exception(error_ms)
+	else:
+		print('Available commands for your bot')
+		for entry in get_routes():
+			try:
+				cmd, __, __, desc = entry
+			except ValueError:
+				cmd = entry[0]
+				desc = ''
+			cmd = remove_slash(cmd)
+			print('%s - %s' % (cmd, desc))
+	finally:
+		sys.path.pop(0)
+
 
 
 def create_with_webhook(bot_name, cert_path = False):
@@ -223,13 +269,41 @@ def create_bot(bot_name):
 	return
 
 
+def serve():
+	# deletes the webHook
+	import sys
+	sys.path.insert(0, os.getcwd())
+
+	try:
+		import configuration
+	except ImportError:
+		error_ms = '%s\n%s' % ('Couln\'t import configuration!',
+			'Please, go the directory where your bot code lives and then try')
+		raise Exception(error_ms)
+	else:
+		# if everything is ok then we are in the bot directory
+		# so we can import the `app` without any problem
+		import app
+		print('Bot started!')
+		try:
+			app.start_bot()
+		except KeyboardInterrupt:
+			print('stopping the bot...')
+			app.stop_bot()
+			print("BYE!")
+
+	finally:
+		sys.path.pop(0)
+
+
 def main():
 	# main entry point of the console program
 	CMD_PARSER = get_parser()
 	CMD_ARGS = CMD_PARSER.parse_args()
 
 	if CMD_ARGS.serve:
-		print('Serve')
+		print('Starting the bot...')
+		serve()
 
 	if CMD_ARGS.create or CMD_ARGS.create == '':
 		print('Creating bot')
@@ -238,6 +312,12 @@ def main():
 	if CMD_ARGS.create_certificate:
 		print('Creating self-signed certificate')
 		create_certificate('my_bot')
+
+	if CMD_ARGS.list_commands:
+		get_command_list()
+
+	if CMD_ARGS.syncdb:
+		sync_db()
 
 	if CMD_ARGS.set_webhook:
 		print('Setting webhook')
