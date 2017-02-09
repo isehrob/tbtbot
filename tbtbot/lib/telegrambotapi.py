@@ -2,7 +2,6 @@ import json
 
 
 
-
 class TelegramBotApiBaseType():
 
 	def __init__(self, json_object=None):
