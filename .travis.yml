@@ -10,7 +10,7 @@ install:
   - pip install tornado pytest
 
 script:
-  - pytest tbtbot/tests
+  - pytest tbtbot
 
 # after_success:
 #  - codecov
