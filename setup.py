@@ -4,7 +4,7 @@ setup(
     name='tbtbot',
     version='0.1dev',
     author='Sehrob Ibrohimov',
-    packages=['tbtbot', 'tbtbot.test'],
+    packages=['tbtbot', 'tbtbot.tests'],
     license='License.txt',
     description='Telegram bot',
     long_description=open('README.md').read(),

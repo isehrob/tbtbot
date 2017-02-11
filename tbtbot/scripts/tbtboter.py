@@ -13,7 +13,7 @@ import requests
 import tornado.httpclient
 
 import tbtbot
-from tbtbot.scripts import templatestrings
+from tbtbot.apptemplate import templatestrings
 
 
 
@@ -301,9 +301,19 @@ def main():
 	CMD_PARSER = get_parser()
 	CMD_ARGS = CMD_PARSER.parse_args()
 
+	import warnings
+
+	print(CMD_ARGS)
+
+	if len(get_trues, CMD_ARGS.__dict__) > 2:
+		warnings.warn(
+			'You have supplied more than one argument to the boter. \
+			Please, be advised that only the first argument will be used',
+		)
+
 	if CMD_ARGS.serve:
 		print('Starting the bot...')
-		serve()
+		return serve()
 
 	if CMD_ARGS.create or CMD_ARGS.create == '':
 		print('Creating bot')
