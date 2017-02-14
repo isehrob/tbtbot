@@ -11,14 +11,14 @@ def test_pytest():
 def test_pytest_again():
 	assert 1 == 1
 
-def test_boter_cmd_args(mocker):
-	class ArgObject():
-		pass
+# def test_boter_cmd_args(mocker):
+# 	class ArgObject():
+# 		pass
 
-	parser = argparse.ArgumentParser()
-	mocked_args = mocker.patch.object(parser, 'parse_args', autospec=True)
-	obj = ArgObject()
-	obj.serve = True
-	mocked_args.return_value = obj
+# 	parser = argparse.ArgumentParser()
+# 	mocked_args = mocker.patch.object(parser, 'parse_args', autospec=True)
+# 	obj = ArgObject()
+# 	obj.serve = True
+# 	mocked_args.return_value = obj
 
-	assert tbtboter.main() == tbtboter.serve()
+# 	assert tbtboter.main() == tbtboter.serve()

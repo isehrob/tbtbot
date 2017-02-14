@@ -8,6 +8,8 @@ import sys
 import subprocess
 import argparse
 import re
+import importlib
+from contextlib import ContextDecorator
 
 import requests
 import tornado.httpclient
@@ -15,6 +17,62 @@ import tornado.httpclient
 import tbtbot
 from tbtbot.apptemplate import templatestrings
 
+
+
+class ImproperlyConfigured(Exception):
+	pass
+
+
+# taken from: https://docs.python.org/3.5/library/contextlib.html#contextlib.ContextDecorator
+class dirtopythonpath(ContextDecorator):
+	def __init__(self, cwd=None):
+		self.cwd = cwd if cwd else os.getcwd()
+
+    def __enter__(self):
+        import sys
+		sys.path.insert(0, self.cwd)
+        return self
+
+    def __exit__(self, *exc):
+        sys.path.pop(0)
+        return False
+
+
+def check_bot_config(configuration):
+	"""Bot configuration check for misconfiguration"""
+	# these attributes must be declared in the bot's config
+	mustbeattrs = [
+		'APP_MODULE'
+		'BOT_TOKEN',
+		'DB_MODULE',
+		'ROUTE_MODULE',
+		'WEBHOOK_URL',
+		'SERVER_PORT',
+		'SERVER_HOST',
+		'UPDATE_METHOD',
+	]
+
+	notpresents = []
+	emptyvals = []
+
+	# checks configuration attribute if it is not defined
+	def is_notdefined(val):
+		return val == '' or val == None or '<' in val
+
+	for attrib in configuration.__dict__.keys():
+		if attrib not in mustbeattrs:
+			notpresents.append(attrib)
+		elif is_notdefined(configuration.__dict__[attrib]):
+			emptyvals.append(attrib)
+
+	if notpresents or emptyvals:
+		error_ms = ''
+		if notpresents:
+			error_ms += 'These attributes are not defined: \n%s' % str(notpresents)
+		if emptyvals:
+			error_ms += 'These attributes are not set properly: \n%s' % str(emptyvals)
+		return ImproperlyConfigured(error_ms)
+	return True
 
 
 def get_parser():
@@ -107,72 +165,61 @@ def delete_webhook():
 		sys.path.pop(0)
 
 
-def create_certificate(bot_name):
-	# creates self signed ssl certificate
-	cwd = os.getcwd()
-	cert_path = input('Please specify the path for the certificate [default: current dir]: ', )
+class TBTBoter():
 
-	try:
-		os.chdir(cert_path)
-	except FileNotFoundError:
-		print('Using default value for the path')
-		cert_path = cwd
-		pass
-
-	rtncode = subprocess.call([
-		"openssl",
-		"req", "-newkey", "rsa:2048", "-sha256", "-nodes",
-		"-keyout", "%s_private.key" % bot_name,
-		"-x509", "-days", "365", "-out", "%s_public.pem" % bot_name
-	])
-	if not rtncode:
-		print("Self-signed certificate is created in '%s'" % os.path.abspath(cert_path))
-		return cert_path
-	os.chdir(cwd)
-	return False
-
-
-def sync_db():
-	# deletes the webHook
-	import sys
-	sys.path.insert(0, os.getcwd())
-
-	try:
-		import configuration
-	except ImportError:
-		error_ms = '%s\n%s' % ('Couln\'t import configuration!',
-			'Please, go the directory where your bot code lives and then try')
-		raise Exception(error_ms)
-	else:
-		import importlib
+	def __init__(self):
+		self.cwd = os.getcwd()
+		sys.path.insert(0, self.cwd)
 		try:
-			db = importlib.import_module(configuration.DB_MODULE)
+			import configuration
+			self.configuration = configuration
 		except ImportError:
-			error_ms = '%s\n%s' % ('Couln\'t import db module!',
-			'Maybe you\'ve deleted db.py or moved to somewhere else?')
+			error_ms = '%s\n%s' % ('Couln\'t import configuration!',
+				'Please, go the directory where your bot code lives and then try')
 			raise Exception(error_ms)
-		else:
+
+	def create_certificate(self):
+		# creates self signed ssl certificate
+		cert_path = input('Please specify the path for the certificate [default: current dir]: ', )
+
+		try:
+			os.chdir(cert_path)
+		except FileNotFoundError:
+			print('Invalid path! Using current directory!')
+			cert_path = self.cwd
+			pass
+
+		rtncode = subprocess.call([
+			"openssl",
+			"req", "-newkey", "rsa:2048", "-sha256", "-nodes",
+			"-keyout", "%s_private.key" % bot_name,
+			"-x509", "-days", "365", "-out", "%s_public.pem" % bot_name
+		])
+		if not rtncode:
+			print("Self-signed certificate is created in '%s'" % os.path.abspath(cert_path))
+			return cert_path
+
+		return False
+
+	def sync_db(self):
+		db = importlib.import_module(self.configuration.DB_MODULE)
+		try:
 			db.create_all()
-	finally:
-		sys.path.pop(0)
+		except Exception as e:
+			error_ms = '%s\n%s' % ('Couln\'t create db tables!', e)
+			raise Exception(error_ms)
+		return False
 
 
-def get_command_list():
-	# todo: make more elegant
-	def remove_slash(cmd):
-		return cmd[1:]
+	def get_command_list(self):
+		# todo: make more elegant
+		def remove_slash(cmd):
+			return cmd[1:]
 
-	import sys
-	sys.path.insert(0, os.getcwd())
-	try:
-		from routes import get_routes
-	except ImportError:
-		error_ms = '%s\n%s' % ('Couln\'t import routes!',
-			'Please, go the directory where your bot code lives and then try')
-		raise Exception(error_ms)
-	else:
+		routes = importlib.import_module(self.configuration.ROUTE_MODULE)
+
 		print('Available commands for your bot')
-		for entry in get_routes():
+		for entry in routes.get_routes():
 			try:
 				cmd, __, __, desc = entry
 			except ValueError:
@@ -180,110 +227,95 @@ def get_command_list():
 				desc = ''
 			cmd = remove_slash(cmd)
 			print('%s - %s' % (cmd, desc))
-	finally:
-		sys.path.pop(0)
 
 
+	def create_with_webhook(self, bot_name, cert_path = False):
+		# creates the telegram bot skeleton suited
+		# to get updates by webHook
+		print('creating with webhook')
+		os.mkdir(bot_name)
+		os.chdir(os.path.abspath(bot_name))
+		template = os.path.join(os.path.dirname(tbtbot.__file__), 'apptemplate')
 
-def create_with_webhook(bot_name, cert_path = False):
-	# creates the telegram bot skeleton suited
-	# to get updates by webHook
-	cwd = os.getcwd()
-	print('creating with webhook')
-	os.mkdir(bot_name)
-	os.chdir(os.path.abspath(bot_name))
-	temp_dir = os.path.join(os.path.dirname(tbtbot.__file__), 'template')
+		if cert_path:
+			cert_path = os.path.abspath(cert_path)
 
-	if cert_path:
-		cert_path = os.path.abspath(cert_path)
+		for entry in os.listdir(template):
+			if os.path.isfile(os.path.join(template, entry)):
+				with open(os.path.join(template, entry)) as f:
+					with open(entry, 'w') as w:
+						if entry == '.env.example' and cert_path:
+							w.write(templatestrings.envtemplate % (
+								os.path.join(cert_path, bot_name + '_private.key'),
+								os.path.join(cert_path, bot_name + '_public.key')
+								))
+						elif entry == 'configuration.py':
+							w.write(templatestrings.configtemplate)
+						else:
+							w.write(f.read())
 
-	for entry in os.listdir(temp_dir):
-		if os.path.isfile(os.path.join(temp_dir, entry)):
-			with open(os.path.join(temp_dir, entry)) as f:
-				with open(entry, 'w') as w:
-					if entry == '.env.example' and cert_path:
-						w.write(templatestrings.envtemplate % (
-							os.path.join(cert_path, bot_name + '_private.key'),
-							os.path.join(cert_path, bot_name + '_public.key')
-							))
-					elif entry == 'configuration.py':
-						w.write(templatestrings.configtemplate)
-					else:
-						w.write(f.read())
-	os.chdir(cwd)
-	return
-
-
-def create_with_getUpdates(bot_name):
-	# creates the telegram bot skeleton without
-	# webhook functionality for some reasons
-	# for example when the host hasn't static ip
-	cwd = os.getcwd()
-	print('creating with getUpdates')
-	os.mkdir(bot_name)
-	os.chdir(os.path.abspath(bot_name))
-	temp_dir = os.path.join(os.path.dirname(tbtbot.__file__), 'template2')
-
-	for entry in os.listdir(temp_dir):
-		if os.path.isfile(os.path.join(temp_dir, entry)):
-			with open(os.path.join(temp_dir, entry)) as f:
-				with open(entry, 'w') as w:
-					if entry == '.env.example':
-						w.write(templatestrings.env2template)
-					elif entry == 'configuration.py':
-						w.write(templatestrings.config2template)
-					else:
-						w.write(f.read())
-	os.chdir(cwd)
-	return
+		os.chdir(self.cwd)
+		return
 
 
-def create_bot(bot_name):
+	def create_with_getUpdates(self, bot_name):
+		# creates the telegram bot skeleton without
+		# webhook functionality for some reasons
+		# for example when the host hasn't static ip
+		print('creating with getUpdates')
+		os.mkdir(bot_name)
+		os.chdir(os.path.abspath(bot_name))
+		template = os.path.join(os.path.dirname(tbtbot.__file__), 'template2')
 
-	if not bot_name:
-		bot_name = input('Please, specify a name for your bot: ', )
+		for entry in os.listdir(template):
+			if os.path.isfile(os.path.join(template, entry)):
+				with open(os.path.join(template, entry)) as f:
+					with open(entry, 'w') as w:
+						if entry == '.env.example':
+							w.write(templatestrings.env2template)
+						elif entry == 'configuration.py':
+							w.write(templatestrings.config2template)
+						else:
+							w.write(f.read())
+		os.chdir(self.cwd)
+		return
+
+
+	def create_bot(self, bot_name):
+
 		if not bot_name:
-			exit("Can't create a bot without a name")
-	updates_type = input('Ok, how do you want to get your updates?\n\
-						Through 1 webhooks / 2 long polling [1/2]: ', )
+			bot_name = input('Please, specify a name for your bot: ', )
+			if not bot_name:
+				exit("Can't create a bot without a name")
+		updates_type = input('Ok, how do you want to get your updates?\n\
+							Through 1 webhooks / 2 long polling [1/2]: ', )
 
-	if int(updates_type) not in [1,2]:
-		exit('Unkown option, please retry')
-
-	if int(updates_type) is 1:
-		create_ssl = input('Want to create self-signed certificate? [Yes/No]: ', )
-		if create_ssl not in ['Yes', 'No']:
+		if int(updates_type) not in [1,2]:
 			exit('Unkown option, please retry')
-		if create_ssl == 'Yes':
-			cert_path = create_certificate(bot_name)
-			if cert_path is False:
-				exit('Couldn\'t create certificate')
-			create_with_webhook(bot_name, cert_path)
-		if create_ssl == 'No':
-			create_with_webhook(bot_name)
 
-	if int(updates_type) is 2:
-		create_with_getUpdates(bot_name)
+		if int(updates_type) is 1:
+			create_ssl = input('Want to create self-signed certificate? [Yes/No]: ', )
+			if create_ssl not in ['Yes', 'No']:
+				exit('Unkown option, please retry')
+			if create_ssl == 'Yes':
+				cert_path = create_certificate(bot_name)
+				if cert_path is False:
+					exit('Couldn\'t create certificate')
+				create_with_webhook(bot_name, cert_path)
+			if create_ssl == 'No':
+				create_with_webhook(bot_name)
 
-	print('DONE!')
-	return
+		if int(updates_type) is 2:
+			create_with_getUpdates(bot_name)
+
+		print('DONE!')
+		return
 
 
-def serve():
-	# deletes the webHook
-	import sys
-	sys.path.insert(0, os.getcwd())
+	def start(self):
 
-	try:
-		import configuration
-	except ImportError:
-		error_ms = '%s\n%s' % ('Couln\'t import configuration!',
-			'Please, go the directory where your bot code lives and then try')
-		raise Exception(error_ms)
-	else:
-		# if everything is ok then we are in the bot directory
 		# so we can import the `app` without any problem
-		import app
+		app = importlib.import_module(self.configuration.APP_MODULE)
 		print('Bot started!')
 		try:
 			app.start_bot()
@@ -291,9 +323,6 @@ def serve():
 			print('stopping the bot...')
 			app.stop_bot()
 			print("BYE!")
-
-	finally:
-		sys.path.pop(0)
 
 
 def main():
