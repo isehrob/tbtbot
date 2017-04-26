@@ -14,7 +14,7 @@ setup(
     ],
     entry_points={
         'console_scripts':
-            ['tbtboter = tbtbot.scripts.tbtboter:main',]
+            ['tbtboter = tbtbot.tbtboter.cli:main',]
     },
 )
 

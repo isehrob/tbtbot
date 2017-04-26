@@ -13,7 +13,7 @@ import routes
 
 
 def make_app():
-	app = tbtbot.lib.custom.CustomApplication(
+	app = tbtbot.lib.Application(
 		routes.get_routes(),
 		debug=True,
 		autoreload=True
@@ -24,9 +24,7 @@ def make_app():
 	])
 	return app
 
-
-if __name__ == "__main__":
-
+def start_bot():
     http_server = tornado.httpserver.HTTPServer(make_app(), ssl_options={
         "certfile": configuration.CERTFILE,
         "keyfile": configuration.KEYFILE
@@ -38,3 +36,12 @@ if __name__ == "__main__":
     )
 
     tornado.ioloop.IOLoop.current().start()
+
+
+def stop_bot():
+    tornado.ioloop.IOLoop.current().stop()
+    return True
+
+if __name__ == "__main__":
+
+	start_bot()
