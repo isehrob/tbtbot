@@ -1,5 +1,5 @@
 
-envtemplate = """
+webhook_env_template = """
 # put here your bot token
 BOT_TOKEN=<BOT_TOKEN>
 
@@ -12,7 +12,7 @@ SERVER_PORT=8443
 SERVER_HOST=0.0.0.0
 """
 
-configtemplate = """
+webhook_config_template = """
 \"\"\"tbtbot configuration lives here
 \"\"\"
 
@@ -35,7 +35,7 @@ SERVER_PORT = env('SERVER_PORT')
 SERVER_HOST = env('SERVER_HOST')
 """
 
-env2template = """
+update_env_template = """
 # put here your bot token
 BOT_TOKEN=<BOT_TOKEN>
 
@@ -44,7 +44,7 @@ SERVER_PORT=8585
 SERVER_HOST=0.0.0.0
 """
 
-config2template = """
+update_config_template = """
 \"\"\"tbtbot configuration lives here
 \"\"\"
 

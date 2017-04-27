@@ -43,23 +43,21 @@ class ComplexCLI(click.MultiCommand):
 
 
 @click.command(cls=ComplexCLI, context_settings=CONTEXT_SETTINGS)
-@click.option('--home', type=click.Path(exists=True, file_okay=False,
-                                        resolve_path=True),
-              help='Changes the folder to operate on.')
+# @click.option('--home', type=click.Path(exists=True, file_okay=False,
+#                                         resolve_path=True),
+#               help='Changes the folder to operate on.')
 @pass_context
-def main(ctx, home):
+def main(ctx):
     """A complex command line interface."""
     if ctx.config is None:
-        os.chdir(ctx.home)
         import sys
         sys.path.insert(0, os.getcwd())
         try:
             config = __import__('configuration')
-        except ImportError:
+        except ImportError as e:
             error_ms = '%s\n%s' % ('Couln\'t import configuration!',
                 'Please, go the directory where your bot code lives and then try')
-            click.echo(click.style(error_ms, fg='red'))
-            exit()
+            exit(click.style(error_ms, fg='red'))
         else:
             check_bot_config(config)
             ctx.config = config

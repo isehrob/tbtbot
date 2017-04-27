@@ -1,24 +1,17 @@
+import os
 import pytest
-import argparse
+from click.testing import CliRunner
 
-from tbtbot.scripts import tbtboter
+from tbtbot.tbtboter import cli
+from tbtbot.tbtboter.commands.cmd_create_bot import make_config_file
 
 
-
-def test_pytest():
-	assert 0 == 0
-
-def test_pytest_again():
-	assert 1 == 1
-
-# def test_boter_cmd_args(mocker):
-# 	class ArgObject():
-# 		pass
-
-# 	parser = argparse.ArgumentParser()
-# 	mocked_args = mocker.patch.object(parser, 'parse_args', autospec=True)
-# 	obj = ArgObject()
-# 	obj.serve = True
-# 	mocked_args.return_value = obj
-
-# 	assert tbtboter.main() == tbtboter.serve()
+@pytest.mark.parametrize("cmd", [
+	'start', 'set_webhook', 'drop_webhook', 
+	'webhook_info', 'list_bot_commands', 'sync_db'
+])
+def test_call_config_required_cmd_outside_of_bot_folder(cmd):
+	runner = CliRunner()
+	result = runner.invoke(cli.main, [cmd])
+	assert type(result.exception) is SystemExit
+	assert 'Couln\'t import configuration!' in result.output

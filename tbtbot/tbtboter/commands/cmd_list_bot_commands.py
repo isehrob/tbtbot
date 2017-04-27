@@ -18,4 +18,4 @@ def cli(context):
 			cmd = entry[0]
 			desc = ''
 		cmd = remove_slash(cmd)
-		click.echo('%s - %s' % (cmd, desc))
+		click.echo(click.style('%s - %s' % (cmd, desc), fg='green'))

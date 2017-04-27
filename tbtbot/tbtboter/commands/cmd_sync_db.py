@@ -11,5 +11,5 @@ def cli(context):
 		db.create_all()
 	except Exception as e:
 		error_ms = '%s\n%s' % ('Couln\'t create db tables!', e)
-		raise Exception(error_ms)
-	return False
+		raise Exception(click.style(error_ms, fg='red'))
+	return True

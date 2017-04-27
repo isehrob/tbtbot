@@ -7,7 +7,7 @@ from tbtbot.tbtboter.cli import pass_context
 def cli(context):
 	"""Starts bot server"""
 	app = __import__(context.config.APP_MODULE)
-	click.echo('Bot started!')
+	click.echo('Starting the bot...')
 	try:
 		app.start_bot()
 	except KeyboardInterrupt:
