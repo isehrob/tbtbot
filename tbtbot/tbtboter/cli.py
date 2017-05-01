@@ -9,9 +9,9 @@ from tbtbot.lib.utils import check_bot_config
 CONTEXT_SETTINGS = dict(auto_envvar_prefix='TBTBOT')
 
 
-class Context(object):
+class Context():
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self.verbose = False
         self.home = os.getcwd()
         self.config = None
@@ -19,6 +19,27 @@ class Context(object):
 pass_context = click.make_pass_decorator(Context, ensure=True)
 cmd_folder = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                           'commands'))
+
+@pass_context
+def needs_config(ctx):
+    """Decorator function which ensures that the configuration of bot is present"""
+    def wrapper(func):
+        if ctx.config is None:
+            import sys
+            sys.path.insert(0, os.getcwd())
+            try:
+                config = __import__('configuration')
+            except ImportError as e:
+                error_ms = '%s\n%s' % ('Couln\'t import configuration!',
+                    'Please, go to the directory where your bot code lives and then try')
+                exit(click.style(error_ms, fg='red'))
+            else:
+                check_bot_config(config)
+                ctx.config = config
+            finally:
+                sys.path.pop(0)
+        return func()
+    return wrapper
 
 
 class ComplexCLI(click.MultiCommand):
@@ -43,23 +64,22 @@ class ComplexCLI(click.MultiCommand):
 
 
 @click.command(cls=ComplexCLI, context_settings=CONTEXT_SETTINGS)
-# @click.option('--home', type=click.Path(exists=True, file_okay=False,
-#                                         resolve_path=True),
-#               help='Changes the folder to operate on.')
 @pass_context
 def main(ctx):
     """A complex command line interface."""
-    if ctx.config is None:
-        import sys
-        sys.path.insert(0, os.getcwd())
-        try:
-            config = __import__('configuration')
-        except ImportError as e:
-            error_ms = '%s\n%s' % ('Couln\'t import configuration!',
-                'Please, go the directory where your bot code lives and then try')
-            exit(click.style(error_ms, fg='red'))
-        else:
-            check_bot_config(config)
-            ctx.config = config
-        finally:
-            sys.path.pop(0)
+    pass
+    # print(ctx.config)
+    # if ctx.config is None:
+    #     import sys
+    #     sys.path.insert(0, os.getcwd())
+    #     try:
+    #         config = __import__('configuration')
+    #     except ImportError as e:
+    #         error_ms = '%s\n%s' % ('Couln\'t import configuration!',
+    #             'Please, go the directory where your bot code lives and then try')
+    #         exit(click.style(error_ms, fg='red'))
+    #     else:
+    #         check_bot_config(config)
+    #         ctx.config = config
+    #     finally:
+    #         sys.path.pop(0)

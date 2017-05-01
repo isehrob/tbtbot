@@ -4,6 +4,7 @@ import shutil
 import click
 import tbtbot
 from tbtbot.tbtboter.cli import pass_context
+from tbtbot.tbtboter.commands import cmd_create_ssl_cert
 from tbtbot.apptemplate import template_strings as tstrings
 
 
@@ -52,7 +53,7 @@ def make_config_file(config_string):
 		f.write(config_string)
 
 
-def create_with_webhook(certificate_path):
+def create_with_webhook(bot_name, certificate_path):
 	# creates the telegram bot skeleton suited
 	# to get updates by webHook
 	cert_path = os.path.abspath(certificate_path)
@@ -91,24 +92,25 @@ def create_with_getUpdates():
 @click.option(
 	'--update_type', 
 	prompt="Ok, how do you want to get your updates?\nwebhooks[1]/long polling[2]",
-	type=click.Choice([1, 2]))
+	type=click.Choice(['1', '2']))
 @pass_context
-def cli(context):
+def cli(context, bot_name, update_type):
 	"""Creates grand new bot in cwd"""
 	os.mkdir(bot_name)
 	os.chdir(os.path.abspath(bot_name))
 
-	if updates_type is 1:
+	if update_type == '1':
 		click.echo('creating with webhook')
 		cert_path = False
-		if click.confirm('Want to create self-signed certificate? [Yes/No]'):
-			cert_path = context.invoke('create_ssl_cert', [bot_name])
+		if click.confirm('Want to create self-signed certificate?'):
+			# TODO: is this right?
+			cert_path = cmd_create_ssl_cert.create_certificate(bot_name)
 			if cert_path is False:
 				click.echo(click.style('Couldn\'t create certificate.\
 					Creating bot without ssl cert', fg='yellow'))
-		create_with_webhook(cert_path)
+		create_with_webhook(bot_name, cert_path)
 
-	if updates_type is 2:
+	if update_type == '2':
 		click.echo('creating with getUpdates')
 		create_with_getUpdates()
 

@@ -5,6 +5,7 @@ import click
 
 
 def get_openssl_command(bot_name):
+	""" Extracting for testing purposes"""
 	return [
 		"openssl",
 		"req", "-newkey", "rsa:2048", "-sha256", "-nodes",
@@ -13,21 +14,36 @@ def get_openssl_command(bot_name):
 	]
 
 
+def create_certificate(bot_name, path=False):
+	if not path:
+		path = 'ssl'
+		os.mkdir(path)
+	os.chdir(path)
+	params = get_openssl_command(bot_name)
+	rtncode = subprocess.call(params)
+	os.chdir('../')
+	if rtncode is 0: # then child process returned 0 which means success
+		return path
+	# TODO: is this right thing to do?
+	return False
+
+
+
 @click.command('create_ssl_cert', short_help='Create self signed certificate for bot')
-@click.option('--path', prompt=True)
 @click.option('--bot_name', prompt=True)
-def cli(path, bot_name):
+@click.option('--path', prompt=True)
+def cli(bot_name, path):
 	"""Create self signed certificate for bot"""
 	try:
-		os.chdir(path)
+		os.path.isdir(path)
 	except FileNotFoundError:
 		click.echo(click.style('Danger! Looks like there is no such a directory.'))
 		if click.confirm('Use current directory instead?', abort=True):
-			path = os.getcwd()
-		pass
-	rtncode = subprocess.call(get_openssl_command(bot_name))
-	if not rtncode: # then child process returned 0 which means success
+			result = create_certificate(bot_name)
+	else:
+		result = create_certificate(bot_name, path)
+	if result:
 		click.echo("Self-signed certificate is created in '%s'" % os.path.abspath(path))
-		return path
-	# TODO: is this right thing to do?
-	raise IOError('Couldnt create')
+		return result
+	raise IOError(click.style('Couldn\'t create certificate!', fg='red'))
+	

@@ -1,9 +1,10 @@
 import click
-from tbtbot.tbtboter.cli import pass_context
+from tbtbot.tbtboter.cli import pass_context, needs_config
 
 
 @click.command('list_bot_commands', short_help='Lists available commands set for your bot')
 @pass_context
+@needs_config
 def cli(context):
 	"""Lists available commands set for your bot"""
 	def remove_slash(cmd):

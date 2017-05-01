@@ -1,9 +1,10 @@
 import click
-from tbtbot.tbtboter.cli import pass_context
+from tbtbot.tbtboter.cli import pass_context, needs_config
 
 
 @click.command('set_webhook', short_help='Sets a webhook for your bot')
 @pass_context
+@needs_config
 def cli(context):
 	"""Sets a webhook for your bot"""
 	click.echo('setting webhook for', context.config.API)
