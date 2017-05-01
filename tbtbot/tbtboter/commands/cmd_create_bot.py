@@ -37,14 +37,18 @@ def copy_app_template(apptemplatefile):
 
 def make_env_file(env_string):
 	"""creates .env.example file in current directory"""
-	with open('.env.example') as f:
+	with open('.env.example', 'w') as f:
 		f.write(env_string)
+
+
+def set_env():
+	shutil.copy('.env.example', '.env')
 
 
 def make_config_file(config_string):
 	"""creates bot configuration file from provided string
 		in current directory"""
-	with.open('configuration.py') as f:
+	with open('configuration.py', 'w') as f:
 		f.write(config_string)
 
 

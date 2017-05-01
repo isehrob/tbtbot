@@ -63,4 +63,3 @@ def main(ctx):
             ctx.config = config
         finally:
             sys.path.pop(0)
-        print('done')

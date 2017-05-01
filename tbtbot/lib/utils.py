@@ -23,8 +23,7 @@ def check_bot_config(configuration):
 		'ROUTE_MODULE',
 		'WEBHOOK_URL',
 		'SERVER_PORT',
-		'SERVER_HOST',
-		# 'UPDATE_METHOD',
+		'SERVER_HOST'
 	]
 
 	notpresents = []
@@ -38,6 +37,5 @@ def check_bot_config(configuration):
 		if notpresents:
 			error_ms += 'These attributes are not defined in configuration: \n%s' \
 							% "\n".join(notpresents)
-		click.echo(click.style(error_ms, fg='red'))
-		exit()
+		exit(click.style(error_ms, fg='red'))
 	return True

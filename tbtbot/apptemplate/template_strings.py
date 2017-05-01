@@ -65,4 +65,13 @@ SERVER_HOST = env('SERVER_HOST')
 
 # in milliseconds
 POLL_INTERVAL = 2000
+
+APP_MODULE = None
+
+DB_MODULE = None
+
+ROUTE_MODULE = None
+
+WEBHOOK_URL = None
+
 """
