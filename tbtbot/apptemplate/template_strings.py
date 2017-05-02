@@ -33,6 +33,14 @@ KEYFILE = env("KEYFILE")
 
 SERVER_PORT = env('SERVER_PORT')
 SERVER_HOST = env('SERVER_HOST')
+
+APP_MODULE = 'app'
+
+DB_MODULE = 'db'
+
+ROUTE_MODULE = 'routes'
+
+WEBHOOK_URL = None
 """
 
 update_env_template = """
@@ -66,11 +74,11 @@ SERVER_HOST = env('SERVER_HOST')
 # in milliseconds
 POLL_INTERVAL = 2000
 
-APP_MODULE = None
+APP_MODULE = 'app'
 
-DB_MODULE = None
+DB_MODULE = 'db'
 
-ROUTE_MODULE = None
+ROUTE_MODULE = 'routes'
 
 WEBHOOK_URL = None
 

@@ -1,3 +1,4 @@
+import importlib
 import click
 from tbtbot.tbtboter.cli import pass_context, needs_config
 
@@ -7,7 +8,7 @@ from tbtbot.tbtboter.cli import pass_context, needs_config
 @needs_config
 def cli(context):
 	"""Starts bot server"""
-	app = __import__(context.config.APP_MODULE)
+	app = importlib.import_module(context.config.APP_MODULE)
 	click.echo('Starting the bot...')
 	try:
 		app.start_bot()

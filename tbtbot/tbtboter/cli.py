@@ -20,25 +20,28 @@ pass_context = click.make_pass_decorator(Context, ensure=True)
 cmd_folder = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                           'commands'))
 
-@pass_context
-def needs_config(ctx):
+def needs_config(func):
     """Decorator function which ensures that the configuration of bot is present"""
-    def wrapper(func):
+    def wrapper(ctx, *args, **kwargs):
+        result = None
         if ctx.config is None:
-            import sys
-            sys.path.insert(0, os.getcwd())
             try:
+                # putting current path into PYTHONPATH so we could
+                # import module from the bots directory if it is
+                sys.path.insert(0, os.getcwd())
                 config = __import__('configuration')
             except ImportError as e:
+                sys.path.pop(0)
                 error_ms = '%s\n%s' % ('Couln\'t import configuration!',
                     'Please, go to the directory where your bot code lives and then try')
                 exit(click.style(error_ms, fg='red'))
             else:
                 check_bot_config(config)
                 ctx.config = config
+                result = func(ctx, *args, **kwargs)
             finally:
                 sys.path.pop(0)
-        return func()
+        return result
     return wrapper
 
 
@@ -68,18 +71,3 @@ class ComplexCLI(click.MultiCommand):
 def main(ctx):
     """A complex command line interface."""
     pass
-    # print(ctx.config)
-    # if ctx.config is None:
-    #     import sys
-    #     sys.path.insert(0, os.getcwd())
-    #     try:
-    #         config = __import__('configuration')
-    #     except ImportError as e:
-    #         error_ms = '%s\n%s' % ('Couln\'t import configuration!',
-    #             'Please, go the directory where your bot code lives and then try')
-    #         exit(click.style(error_ms, fg='red'))
-    #     else:
-    #         check_bot_config(config)
-    #         ctx.config = config
-    #     finally:
-    #         sys.path.pop(0)

@@ -88,7 +88,7 @@ def create_with_getUpdates():
 
 
 @click.command('create_bot', short_help='Create grand new bot in cwd')
-@click.option('--bot_name', prompt="Please, specify a name for your bot")
+@click.argument('bot_name')
 @click.option(
 	'--update_type', 
 	prompt="Ok, how do you want to get your updates?\nwebhooks[1]/long polling[2]",

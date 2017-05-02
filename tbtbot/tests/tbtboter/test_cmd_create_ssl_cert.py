@@ -2,6 +2,7 @@
 	Here we test our main console utility functionality
 """
 import os
+import sys
 
 import pytest
 import mock
@@ -16,29 +17,9 @@ from tbtbot.tbtboter import commands
 
 
 
-def make_fake_config():
-	""" Utility function which creates config files in 
-		isolated by click directory to stop the main cli 
-		tool from complining about the absence of config files
-	"""
-	make_config_file(tstrings.update_config_template)
-	make_env_file(tstrings.update_env_template)
-	set_env()
-
-
 @pytest.fixture
 def runner():
 	return CliRunner()
-
-
-@pytest.mark.parametrize("cmd", [
-	'start', 'set_webhook', 'drop_webhook', 
-	'webhook_info', 'list_bot_commands', 'sync_db'
-])
-def test_call_config_required_cmd_outside_of_bot_folder(runner, cmd):
-	result = runner.invoke(cli.main, [cmd])
-	assert type(result.exception) is SystemExit
-	assert 'Couln\'t import configuration!' in result.output
 
 
 def test_create_ssl_cert_command_invalid_path(runner):
@@ -49,6 +30,7 @@ def test_create_ssl_cert_command_invalid_path(runner):
 		result = runner.invoke(cli.main, ['create_ssl_cert', '--path'], input='koko\nchocolate')
 		assert type(result.exception) == SystemExit
 		assert 'Error: --path option requires an argument' in result.output
+
 
 
 def test_create_certificat_success(runner):
@@ -98,21 +80,3 @@ def test_create_ssl_cert_succed(runner):
 		assert func.called == True
 		assert len(func.call_args) is 2
 		assert 'koko' in result.output
-
-
-def test_create_with_webhook_without_cert(runner):
-	func = commands.cmd_create_bot.create_with_webhook
-	with runner.isolated_filesystem():
-		func('bujala', 'False')
-		assert open('app.py')
-
-
-def test_create_bot_with_upd(runner):
-	"""In this test we test the create bot with updates method"""
-	with runner.isolated_filesystem():
-		result = runner.invoke(cli.main, ['create_bot'], input='testingbot\n2')
-		assert "DONE" in result.output
-		assert open('app.py')
-		assert open('configuration.py')
-		assert open('.env.example')
-

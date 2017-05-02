@@ -28,7 +28,6 @@ def create_certificate(bot_name, path=False):
 	return False
 
 
-
 @click.command('create_ssl_cert', short_help='Create self signed certificate for bot')
 @click.option('--bot_name', prompt=True)
 @click.option('--path', prompt=True)
