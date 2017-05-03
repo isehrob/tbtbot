@@ -1,19 +1,10 @@
 """
 	Here we test our main console utility functionality
 """
-import os
-import sys
-import shutil
-
 import pytest
-import mock
 from click.testing import CliRunner
 
-from tbtbot.apptemplate import template_strings as tstrings
 from tbtbot.tbtboter import cli
-from tbtbot.tbtboter.commands.cmd_create_bot import (
-	make_config_file, make_env_file, set_env
-)
 from tbtbot.tbtboter import commands
 
 
